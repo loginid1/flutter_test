@@ -11,18 +11,6 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
 
   @override
-  void initState() {
-    initializeState();
-  }
-
-  // Fido login api plugin are asynchronous, so we initialize in an async method.
-  Future<void> initializeState() async {
-    String clientId = "gkI5fDdxMRSGVI1hnfacxUz-L7xnB4m9ZYNotIjU5EFAPwaM7i_vnrSCtOCcwmOC51rWxz5ENJCRRmCYWO7i8Q==";
-    String baseURL = "https://34b538b0-8ea2-11eb-8acd-978a01301611.usw1.loginid.io";
-    await FPLoginApi.configure(clientId,baseURL);
-  }
-
-  @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Login',
@@ -62,33 +50,103 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  final apiKeyController = TextEditingController();
+  final baseUriController = TextEditingController();
+  final usernameController = TextEditingController();
+  var isLoggedIn = false;
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+  callAlertDialog(BuildContext context, String message) { 
+	final Widget ok = FlatButton(
+	  child: Text("OK"),
+	  onPressed: () { Navigator.of(context).pop(); },
+	);
+
+	showDialog(
+	  context: context,
+	  builder: (BuildContext context) { 
+		return AlertDialog(
+		  title: Text("ALERT"),
+		  content: Text(message),
+		  actions: [ok,],
+		  elevation: 5,
+		);
+	  },
+	);
+  }
+
+  Future<void> _configureLoginID (BuildContext context) async {
+    String clientId = apiKeyController.text;
+    String baseURL = baseUriController.text;
+	await FPLoginApi.configure(clientId, baseURL);
+	callAlertDialog(context, "Configuration Successful!");
+  }
+
+  Future<void> _userInfo (BuildContext context) async { 
+	final String hasAccount = await FPLoginApi.hasAccount() ? "yes" : "no";
+	final String username = await FPLoginApi.getCurrentUsername();
+	final String isLoggedIn = await FPLoginApi.isLoggedIn() ? "yes" : "no";
+	final String token = await FPLoginApi.getCurrentToken();
+
+	final String message = "hasAccount:${hasAccount}\n" +
+					 "username:${username}\n" +
+					 "isLoggedIn:${isLoggedIn}\n" +
+					 "jwt:${token}\n";
+
+	callAlertDialog(context, message);
   }
 
   Future<void> _registerButtonHandler (BuildContext context) async {
-    try{
-      final RegisterResponse response = await FPLoginApi.registerWithUsername("zzkldfdfdsdf");
-      if(response.success == true){
-        // example handling success register case
-        print ('Success: ${response.jwt}');
-    } else {
-    // display error message as snackbar message
-    print ('Error: ${response.errorMessage}' );
+    String clientId = "gi4DN17MwjG1FPZGGDxJacXBaWIZgL8HcSB418Q2tBHyiTNMjzgMVGZ2vTOMOliG9xAFSWGoH-icgNzJA_sy6w==";
+    String baseURL = "https://04c3a570-9621-11eb-9668-3d2d19cc8c42.sandbox-usw1.api.loginid.io";
+    await FPLoginApi.configure(clientId,baseURL);
+
+	final String username = usernameController.text;
+
+    try {
+      final RegisterResponse res = await FPLoginApi.registerWithUsername(username);
+      if(res.success == true){
+	  	callAlertDialog(context, "Successfully registered ${username}!");
+		setState(() { 
+		  isLoggedIn = true;
+		});
+      } else {
+		callAlertDialog(context, "ERROR: ${res.errorMessage}");
+      }
+    } on PlatformException catch(err){
+	  callAlertDialog(context, "ERROR: ${err.message}");
     }
-    } on PlatformException catch(e){
-    print (e.message);
-    // handle error here ...
-    }
+  }
+
+  Future<void> _loginButtonHandler (BuildContext context) async { 
+	final String username = usernameController.text;
+  	var res;
+
+	try { 
+	  if (!username.isEmpty) { 
+		res = await FPLoginApi.loginWithUsername(username);
+	  } else { 
+		res = await FPLoginApi.login();
+	  }
+
+	  if (res.success == true) { 
+		final String _username = await FPLoginApi.getCurrentUsername();
+		callAlertDialog(context, "${_username} successfully logged in!");
+		setState(() { 
+		  isLoggedIn = true;
+		});
+	  } else { 
+		callAlertDialog(context, "ERROR: ${res.errorMessage}");
+	  }
+	} on PlatformException catch(err) { 
+	  callAlertDialog(context, "ERROR: ${err.message}");
+	}
+  }
+
+  Future<void> _logoutButtonHandler (BuildContext context) async { 
+	await FPLoginApi.logout();
+	setState(() { 
+	  isLoggedIn = false;
+	});
   }
 
   @override
@@ -113,35 +171,41 @@ class _MyHomePageState extends State<MyHomePage> {
           children: [
             new Container(
               margin: const EdgeInsets.only(bottom: 10.0),
-              child: TextField(decoration: new InputDecoration(
+              child: TextField(controller: apiKeyController,decoration: new InputDecoration(
                 labelText: "API Key",
                 filled: true,
             ),),),
             new Container(
               margin: const EdgeInsets.only(bottom: 10.0),
-              child: TextField(decoration: new InputDecoration(
+              child: TextField(controller: baseUriController, decoration: new InputDecoration(
                 labelText: "Base URI",
                 filled: true,
               ),),),
             new Container(
               margin: const EdgeInsets.only(bottom: 10.0),
-              child: TextField(decoration: new InputDecoration(
+              child: TextField(controller: usernameController, decoration: new InputDecoration(
                 labelText: "Username",
                 filled: true,
               ),),),
-            ElevatedButton(onPressed: () {}, child: Text("CONFIGURE")),
-            ElevatedButton(onPressed: () {}, child: Text("INFO")),
-            ElevatedButton(onPressed: () {}, child: Text("LOGIN")),
-            ElevatedButton(onPressed: () {_registerButtonHandler(context);}, child: Text("REGISTER")),
-            ElevatedButton(onPressed: () {}, child: Text("LOGOUT")),
+            ElevatedButton(onPressed: () {
+				_configureLoginID(context);
+			}, child: Text("CONFIGURE")),	
+            ElevatedButton(onPressed: () {
+				_userInfo(context);
+			}, child: Text("INFO")),
+            ElevatedButton(onPressed: () {
+				_loginButtonHandler(context);
+			}, child: Text("LOGIN")),
+            ElevatedButton(onPressed: () {
+				_registerButtonHandler(context);
+			}, child: Text("REGISTER")),
+            isLoggedIn ? ElevatedButton(onPressed: () {
+				_logoutButtonHandler(context);
+			}, child: Text("LOGOUT")) : 
+			SizedBox.shrink(),
           ],
         )
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
