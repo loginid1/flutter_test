@@ -1,12 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:flutterpluginfidologinapi/flutterpluginfidologinapi.dart';
+
 void main() {
   runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
+
+  @override
+  void initState() {
+    initializeState();
+  }
+
+  // Fido login api plugin are asynchronous, so we initialize in an async method.
+  Future<void> initializeState() async {
+    String clientId = "gkI5fDdxMRSGVI1hnfacxUz-L7xnB4m9ZYNotIjU5EFAPwaM7i_vnrSCtOCcwmOC51rWxz5ENJCRRmCYWO7i8Q==";
+    String baseURL = "https://34b538b0-8ea2-11eb-8acd-978a01301611.usw1.loginid.io";
+    await FPLoginApi.configure(clientId,baseURL);
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -60,6 +75,22 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  Future<void> _registerButtonHandler (BuildContext context) async {
+    try{
+      final RegisterResponse response = await FPLoginApi.registerWithUsername("zzkldfdfdsdf");
+      if(response.success == true){
+        // example handling success register case
+        print ('Success: ${response.jwt}');
+    } else {
+    // display error message as snackbar message
+    print ('Error: ${response.errorMessage}' );
+    }
+    } on PlatformException catch(e){
+    print (e.message);
+    // handle error here ...
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
@@ -101,7 +132,7 @@ class _MyHomePageState extends State<MyHomePage> {
             ElevatedButton(onPressed: () {}, child: Text("CONFIGURE")),
             ElevatedButton(onPressed: () {}, child: Text("INFO")),
             ElevatedButton(onPressed: () {}, child: Text("LOGIN")),
-            ElevatedButton(onPressed: () {}, child: Text("REGISTER")),
+            ElevatedButton(onPressed: () {_registerButtonHandler(context);}, child: Text("REGISTER")),
             ElevatedButton(onPressed: () {}, child: Text("LOGOUT")),
           ],
         )
