@@ -1,0 +1,22 @@
+PODS:
+  - Flutter (1.0.0)
+  - flutterpluginfidologinapi (0.0.1):
+    - Flutter
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - flutterpluginfidologinapi (from `.symlinks/plugins/flutterpluginfidologinapi/ios`)
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  flutterpluginfidologinapi:
+    :path: ".symlinks/plugins/flutterpluginfidologinapi/ios"
+
+SPEC CHECKSUMS:
+  Flutter: 434fef37c0980e73bb6479ef766c45957d4b510c
+  flutterpluginfidologinapi: a38b510b9e7426090118dd4aabe34dbac14c6e6a
+
+PODFILE CHECKSUM: fe0e1ee7f3d1f7d00b11b474b62dd62134535aea
+
+COCOAPODS: 1.10.1
