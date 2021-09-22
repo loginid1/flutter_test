@@ -98,21 +98,6 @@ class _MyHomePageState extends State<MyHomePage> {
     await FPLoginApi.configure(clientId, baseURL);
 
     final String username = usernameController.text;
-
-    try {
-      final RegisterResponse res =
-          await FPLoginApi.registerWithUsername(username);
-      if (res.success == true) {
-        callAlertDialog(context, "Successfully registered $username!");
-        setState(() {
-          isLoggedIn = true;
-        });
-      } else {
-        callAlertDialog(context, "ERROR: ${res.errorMessage}");
-      }
-    } on PlatformException catch (err) {
-      callAlertDialog(context, "ERROR: ${err.message}");
-    }
   }
 
   Future<void> _loginButtonHandler(BuildContext context) async {
@@ -121,9 +106,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
     try {
       if (username.isNotEmpty) {
-        res = await FPLoginApi.loginWithUsername(username);
+        //res = await FPLoginApi.loginWithUsername(username);
       } else {
-        res = await FPLoginApi.login();
+        //res = await FPLoginApi.login();
       }
 
       if (res.success == true) {
