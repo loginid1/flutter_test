@@ -1,9 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:flutterpluginfidologinapi/flutterpluginfidologinapi.dart';
+import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
+import 'package:dotenv/dotenv.dart' show load, env;
 
 void main() {
+  load();
   runApp(MyApp());
 }
 
@@ -44,6 +48,7 @@ class _MyHomePageState extends State<MyHomePage> {
   final baseUriController = TextEditingController();
   final usernameController = TextEditingController();
   final txPayloadController = TextEditingController();
+  final privateKey = env["PRIVATE_KEY"];//.replaceAll("//n", "/n");
   var password = "Qwerty1!";
   var isLoggedIn = false;
   var needServiceToken = false;
@@ -73,6 +78,9 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _configureLoginID(BuildContext context) async {
+    load();
+    print(env["PRIVATE_KEY"]);
+    print(privateKey);
     String clientId = apiKeyController.text;
     String baseURL = baseUriController.text;
     await FPLoginApi.configure(clientId, baseURL);
@@ -95,10 +103,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _registerFido2Handler(BuildContext context) async {
     String clientId =
-        "uuVBmXTV2qfT72ukvX92-CetrOEKIiLPpjJatMOB1ZompTWLZguM6UPFpKs_ruKsjzb62XyFxmLcz8MqwMmRDA==";
+        "IiJL7d3VCOJ7LL2ZcZmVp5T7clZ3Il7L1g1vgrnxk8QFl1Lc2_h6WarwhJMSve66B_avoNyzJsIeOp6V55_iSQ==";
     String baseURL =
-        "https://c83b7b90-1c22-11ec-b235-2df5f399316b.sandbox-usw1.api.loginid.io";
+        "https://94a8d020-1c77-11ec-b42a-bb8e0fc28366.usw1.loginid.io";
     await FPLoginApi.configure(clientId, baseURL);
+    createServiceToken("auth.register");
 
     final String username = usernameController.text;
 
@@ -225,6 +234,27 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  void createServiceToken(String type) {
+    String tempPrivateKey = '''
+-----BEGIN PRIVATE KEY-----
+MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgQ6UctZbLReLu5S58
+B7hgxyOCZklaGUUqL3cUgLpC8W6hRANCAAS2Jq0kJrZbAAFnCpThILgbJcO6Ao7u
+csncyzzQ4A8TGSasxD9j0EzvT9UY5+zE/XSK9gkGyQ+5D/O472EkaU/U
+-----END PRIVATE KEY-----
+    ''';
+    String serviceToken;
+    final jwt = JWT({
+      "type": type,
+      "iat": DateTime.now().millisecondsSinceEpoch 
+    });
+
+    final key = ECPrivateKey(tempPrivateKey);
+
+    serviceToken = jwt.sign(key, algorithm: JWTAlgorithm.ES256);
+
+    print(serviceToken);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -235,6 +265,21 @@ class _MyHomePageState extends State<MyHomePage> {
           child: ListView(
         padding: const EdgeInsets.all(15),
         children: [
+          new Text(
+            "Credential",
+            textAlign: TextAlign.center,
+          ),
+          new Switch(
+            key: Key("credential_switch"),
+            value: needServiceToken, 
+            onChanged: (value) {
+              setState(() {
+                needServiceToken = value;
+              });
+            },
+            activeTrackColor: Colors.lightGreenAccent,
+            activeColor: Colors.green,
+          ),
           new Container(
             margin: const EdgeInsets.only(bottom: 10.0),
             child: TextField(
