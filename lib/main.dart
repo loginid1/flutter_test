@@ -43,7 +43,10 @@ class _MyHomePageState extends State<MyHomePage> {
   final apiKeyController = TextEditingController();
   final baseUriController = TextEditingController();
   final usernameController = TextEditingController();
+  final txPayloadController = TextEditingController();
+  var password = "Qwerty1!";
   var isLoggedIn = false;
+  var needServiceToken = false;
 
   callAlertDialog(BuildContext context, String message) {
     final Widget ok = TextButton(
@@ -90,38 +93,128 @@ class _MyHomePageState extends State<MyHomePage> {
     callAlertDialog(context, message);
   }
 
-  Future<void> _registerButtonHandler(BuildContext context) async {
+  Future<void> _registerFido2Handler(BuildContext context) async {
     String clientId =
-        "gi4DN17MwjG1FPZGGDxJacXBaWIZgL8HcSB418Q2tBHyiTNMjzgMVGZ2vTOMOliG9xAFSWGoH-icgNzJA_sy6w==";
+        "uuVBmXTV2qfT72ukvX92-CetrOEKIiLPpjJatMOB1ZompTWLZguM6UPFpKs_ruKsjzb62XyFxmLcz8MqwMmRDA==";
     String baseURL =
-        "https://04c3a570-9621-11eb-9668-3d2d19cc8c42.sandbox-usw1.api.loginid.io";
+        "https://c83b7b90-1c22-11ec-b235-2df5f399316b.sandbox-usw1.api.loginid.io";
     await FPLoginApi.configure(clientId, baseURL);
 
     final String username = usernameController.text;
-  }
 
-  Future<void> _loginButtonHandler(BuildContext context) async {
-    final String username = usernameController.text;
-    var res;
+    RegistrationOptions options;
+    if (needServiceToken) {
+      options = RegistrationOptions.buildAuth("");
+    }
+    final RegisterResponse res = await FPLoginApi.registerWithFido2(username, options);
 
     try {
-      if (username.isNotEmpty) {
-        //res = await FPLoginApi.loginWithUsername(username);
+      if (res.success) {
+        callAlertDialog(context, res.jwt);
+          setState(() {
+            isLoggedIn = true;
+          });
       } else {
-        //res = await FPLoginApi.login();
+        callAlertDialog(context, res.errorMessage);
       }
+    } on PlatformException catch (err) {
+      callAlertDialog(context, err.message);
+    }
+  }
 
+  Future<void> _loginFido2Handler(BuildContext context) async {
+    final String username = usernameController.text;
+
+    AuthenticationOptions options;
+    if (needServiceToken) {
+      options = AuthenticationOptions.buildAuth("");
+    }
+    final AuthenticateResponse res = await FPLoginApi.authenticateWithFido2(username, options);
+
+    try {
       if (res.success == true) {
         final String _username = await FPLoginApi.getCurrentUsername();
-        callAlertDialog(context, "$_username successfully logged in!");
+        callAlertDialog(context, res.jwt);
         setState(() {
           isLoggedIn = true;
         });
       } else {
-        callAlertDialog(context, "ERROR: ${res.errorMessage}");
+        callAlertDialog(context, res.errorMessage);
       }
     } on PlatformException catch (err) {
-      callAlertDialog(context, "ERROR: ${err.message}");
+      callAlertDialog(context, err.message);
+    }
+  }
+
+  Future<void> _registerPasswordHandler(BuildContext context) async {
+    final String username = usernameController.text;
+
+    RegistrationOptions options;
+    if (needServiceToken) {
+      options = RegistrationOptions.buildAuth("");
+    }
+    final RegisterResponse res = await FPLoginApi.registerWithPassword(username, password, password, options);
+
+    try {
+      if (res.success) {
+        callAlertDialog(context, res.jwt);
+        setState(() {
+          isLoggedIn = true;
+        });
+      } else {
+        callAlertDialog(context, res.errorMessage);
+      }
+    } on PlatformException catch (err) {
+        callAlertDialog(context, res.errorMessage);
+    }
+  }
+
+  Future<void> _loginPasswordHandler(BuildContext context) async {
+    final String username = usernameController.text;
+
+    AuthenticationOptions options;
+    if (needServiceToken) {
+      options = AuthenticationOptions.buildAuth("");
+    }
+    final AuthenticateResponse res = await FPLoginApi.authenticateWithPassword(username, password, options);
+
+    try {
+      if (res.success) {
+        callAlertDialog(context, res.jwt);
+          setState(() {
+            isLoggedIn = true;
+          });
+      } else {
+        callAlertDialog(context, res.errorMessage);
+      }
+    } on PlatformException catch (err) {
+      callAlertDialog(context, err.message);
+    }
+  }
+
+  Future<void> _txConfirmationHandler(BuildContext context) async {
+    final String username = usernameController.text;
+    final String data = txPayloadController.text;
+    final String nonce = "sdf882fjf62gjs";
+
+    TransactionOptions options;
+    if (needServiceToken) {
+      options = TransactionOptions.buildAuth("");
+    }
+    TransactionPayload payload = TransactionPayload.build(nonce, data);
+    final TransactionResponse res = await FPLoginApi.transactionConfirmation(username, payload, options);
+
+    try {
+      if (res.success) {
+        callAlertDialog(context, res.jwt);
+          setState(() {
+            isLoggedIn = true;
+          });
+      } else {
+        callAlertDialog(context, res.errorMessage);
+      }
+    } on PlatformException catch (err) {
+      callAlertDialog(context, err.message);
     }
   }
 
@@ -175,6 +268,17 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             ),
           ),
+          new Container(
+            margin: const EdgeInsets.only(bottom: 10.0),
+            child: TextField(
+              key: Key("tx_payload"),
+              controller: txPayloadController,
+              decoration: new InputDecoration(
+                labelText: "Transaction Payload",
+                filled: true,
+              ),
+            ),
+          ),
           ElevatedButton(
               key: Key("configure"),
               onPressed: () {
@@ -188,17 +292,35 @@ class _MyHomePageState extends State<MyHomePage> {
               },
               child: Text("INFO")),
           ElevatedButton(
-              key: Key("login"),
+              key: Key("login_fido2"),
               onPressed: () {
-                _loginButtonHandler(context);
+                _loginFido2Handler(context);
               },
               child: Text("LOGIN")),
           ElevatedButton(
-              key: Key("register"),
+              key: Key("login_password"),
               onPressed: () {
-                _registerButtonHandler(context);
+                _loginPasswordHandler(context);
+              },
+              child: Text("LOGIN PASSWORD")),
+          ElevatedButton(
+              key: Key("register_fido2"),
+              onPressed: () {
+                _registerFido2Handler(context);
               },
               child: Text("REGISTER")),
+          ElevatedButton(
+              key: Key("register_password"),
+              onPressed: () {
+                _registerPasswordHandler(context);
+              },
+              child: Text("REGISTER PASSWORD")),
+          ElevatedButton(
+              key: Key("tx_confirmation"),
+              onPressed: () {
+                _txConfirmationHandler(context);
+              },
+              child: Text("TRANSACTION CREATE AND CONFIRM")),
           isLoggedIn
               ? ElevatedButton(
                   key: Key("logout"),
