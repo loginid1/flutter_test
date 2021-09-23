@@ -1,13 +1,17 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:flutterpluginfidologinapi/flutterpluginfidologinapi.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
-import 'package:dotenv/dotenv.dart' show load, env;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:crypto/crypto.dart';
+import 'package:random_string/random_string.dart' as random;
 
-void main() {
-  load();
+void main() async {
+  await dotenv.load(fileName: ".env");
   runApp(MyApp());
 }
 
@@ -48,7 +52,7 @@ class _MyHomePageState extends State<MyHomePage> {
   final baseUriController = TextEditingController();
   final usernameController = TextEditingController();
   final txPayloadController = TextEditingController();
-  final privateKey = env["PRIVATE_KEY"];//.replaceAll("//n", "/n");
+  final privateKey = dotenv.get("PRIVATE_KEY").replaceAll("\\n", "\n");
   var password = "Qwerty1!";
   var isLoggedIn = false;
   var needServiceToken = false;
@@ -78,9 +82,6 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _configureLoginID(BuildContext context) async {
-    load();
-    print(env["PRIVATE_KEY"]);
-    print(privateKey);
     String clientId = apiKeyController.text;
     String baseURL = baseUriController.text;
     await FPLoginApi.configure(clientId, baseURL);
@@ -102,18 +103,18 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _registerFido2Handler(BuildContext context) async {
+    //delete me
     String clientId =
         "IiJL7d3VCOJ7LL2ZcZmVp5T7clZ3Il7L1g1vgrnxk8QFl1Lc2_h6WarwhJMSve66B_avoNyzJsIeOp6V55_iSQ==";
     String baseURL =
         "https://94a8d020-1c77-11ec-b42a-bb8e0fc28366.usw1.loginid.io";
     await FPLoginApi.configure(clientId, baseURL);
-    createServiceToken("auth.register");
 
     final String username = usernameController.text;
 
     RegistrationOptions options;
     if (needServiceToken) {
-      options = RegistrationOptions.buildAuth("");
+      options = RegistrationOptions.buildAuth(createServiceToken("auth.register"));
     }
     final RegisterResponse res = await FPLoginApi.registerWithFido2(username, options);
 
@@ -136,7 +137,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     AuthenticationOptions options;
     if (needServiceToken) {
-      options = AuthenticationOptions.buildAuth("");
+      options = AuthenticationOptions.buildAuth(createServiceToken("auth.login"));
     }
     final AuthenticateResponse res = await FPLoginApi.authenticateWithFido2(username, options);
 
@@ -160,7 +161,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     RegistrationOptions options;
     if (needServiceToken) {
-      options = RegistrationOptions.buildAuth("");
+      options = RegistrationOptions.buildAuth(createServiceToken("auth.register"));
     }
     final RegisterResponse res = await FPLoginApi.registerWithPassword(username, password, password, options);
 
@@ -183,7 +184,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     AuthenticationOptions options;
     if (needServiceToken) {
-      options = AuthenticationOptions.buildAuth("");
+      options = AuthenticationOptions.buildAuth(createServiceToken("auth.login"));
     }
     final AuthenticateResponse res = await FPLoginApi.authenticateWithPassword(username, password, options);
 
@@ -204,11 +205,11 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _txConfirmationHandler(BuildContext context) async {
     final String username = usernameController.text;
     final String data = txPayloadController.text;
-    final String nonce = "sdf882fjf62gjs";
+    final String nonce = random.randomAlphaNumeric(16);
 
     TransactionOptions options;
     if (needServiceToken) {
-      options = TransactionOptions.buildAuth("");
+      options = TransactionOptions.buildAuth(createServiceToken("tx.create", data, nonce));
     }
     TransactionPayload payload = TransactionPayload.build(nonce, data);
     final TransactionResponse res = await FPLoginApi.transactionConfirmation(username, payload, options);
@@ -234,25 +235,31 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  void createServiceToken(String type) {
-    String tempPrivateKey = '''
------BEGIN PRIVATE KEY-----
-MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgQ6UctZbLReLu5S58
-B7hgxyOCZklaGUUqL3cUgLpC8W6hRANCAAS2Jq0kJrZbAAFnCpThILgbJcO6Ao7u
-csncyzzQ4A8TGSasxD9j0EzvT9UY5+zE/XSK9gkGyQ+5D/O472EkaU/U
------END PRIVATE KEY-----
-    ''';
-    String serviceToken;
-    final jwt = JWT({
-      "type": type,
+  String createServiceToken(String type, [String payload = "", String nonce = ""]) {
+    final claims = {
+      "scope": type,
       "iat": DateTime.now().millisecondsSinceEpoch 
-    });
+    };
 
-    final key = ECPrivateKey(tempPrivateKey);
+    if (payload.length > 0) {
+      var bytes = utf8.encode(payload);
+      var digest = sha256.convert(bytes);
+      var result = base64.encode(digest.bytes)
+        .replaceAll("+", "-")
+        .replaceAll("/", "_")
+        .replaceAll("=", "");
 
-    serviceToken = jwt.sign(key, algorithm: JWTAlgorithm.ES256);
+      claims["payload_hash"] = result;
+      claims["username"] = "pizza";
+      claims["nonce"] = nonce;
+    }
 
-    print(serviceToken);
+    final jwt = JWT(claims);
+
+    final key = ECPrivateKey(privateKey);
+
+    String serviceToken = jwt.sign(key, algorithm: JWTAlgorithm.ES256);
+    return serviceToken;
   }
 
   @override
