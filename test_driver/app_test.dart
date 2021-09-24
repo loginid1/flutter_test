@@ -9,7 +9,6 @@ void main() {
   load();
   final apiKey = env["API_KEY"];
   final baseUri = env["BASE_URI"];
-  final platform = env["PLATFORM"];
   final mainUsername = random.randomAlphaNumeric(7);
 
   FlutterDriver driver;
@@ -21,70 +20,28 @@ void main() {
     await loginid.configure(apiKey, baseUri);
     await loginid.closeAlert();
   });
-
-  group("Validations", () {
-    group("Register", () {
-      test("should not register a empty username", () async {
-        await loginid.register("");
+  
+  group("Registration", () {
+    test("Should register a user with FIDO2", () async {
+        final username = random.randomAlphaNumeric(10);
+        await loginid.registerFido2(username);
         final result = await loginid.getAlertText();
-        expect(result, Messages.failedRegister);
-      });
-
-      test("should not register a username with one character", () async {
-        await loginid.register(random.randomAlphaNumeric(1));
-        final result = await loginid.getAlertText();
-        expect(result, Messages.errorCharacters);
-      });
-
-      test("should not register a username with two characters", () async {
-        await loginid.register(random.randomAlphaNumeric(2));
-        final result = await loginid.getAlertText();
-        expect(result, Messages.errorCharacters);
-      });
-
-      test("should not register a username with 129 characters", () async {
-        await loginid.register(random.randomAlphaNumeric(129));
-        final result = await loginid.getAlertText();
-        expect(result, Messages.errorCharacters);
-      });
+        expect(result, Messages.successfulRegister(username));
     });
 
-    group("Login", () {
-      test("should not register a username with one character", () async {
-        await loginid.login(random.randomAlphaNumeric(1));
+    test("Should register a user with FIDO2", () async {
+        final username = random.randomAlphaNumeric(10);
+        await loginid.registerPassword(username);
         final result = await loginid.getAlertText();
-        expect(result, Messages.errorCharacters);
-      });
-
-      test("should not register a username with two characters", () async {
-        await loginid.login(random.randomAlphaNumeric(2));
-        final result = await loginid.getAlertText();
-        expect(result, Messages.errorCharacters);
-      });
-
-      test("should not register a username with 129 characters", () async {
-        await loginid.login(random.randomAlphaNumeric(129));
-        final result = await loginid.getAlertText();
-        expect(result, Messages.errorCharacters);
-      });
-    });
-
-    tearDown(() async {
-      await loginid.closeAlert();
+        expect(result, Messages.successfulRegister(username));
     });
   });
 
+/*
   group("Authentication", () {
     group("Register", () {
       test("should register a useranme with 3 characters", () async {
         final username = random.randomAlphaNumeric(3);
-        await loginid.register(username);
-        final result = await loginid.getAlertText();
-        expect(result, Messages.successfulRegister(username));
-      });
-
-      test("should register a useranme with 128 characters", () async {
-        final username = random.randomAlphaNumeric(128);
         await loginid.register(username);
         final result = await loginid.getAlertText();
         expect(result, Messages.successfulRegister(username));
@@ -149,6 +106,7 @@ void main() {
       await loginid.closeAlert();
     });
   });
+  */  
 
   tearDownAll(() async {
     await driver.close();

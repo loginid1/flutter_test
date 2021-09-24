@@ -3,11 +3,15 @@ import 'package:flutter_driver/flutter_driver.dart';
 class LoginID {
   final apiKeyInput = find.byValueKey("api_key");
   final baseUriInput = find.byValueKey("base_uri");
+  final usernameInput = find.byValueKey("username");
+  final txConfirmationInput = find.byValueKey("tx_confirmation");
   final configureBtn = find.byValueKey("configure");
   final infoBtn = find.byValueKey("info");
-  final usernameInput = find.byValueKey("username");
-  final registerBtn = find.byValueKey("register");
-  final loginBtn = find.byValueKey("login");
+  final registerFido2Btn = find.byValueKey("register_fido2");
+  final registerPasswordBtn = find.byValueKey("register_password");
+  final loginFido2Btn = find.byValueKey("login_fido2");
+  final loginPasswordBtn = find.byValueKey("login_password");
+  final txConfirmationBtn = find.byValueKey("tx_confirmation");
   final logoutBtn = find.byValueKey("logout");
   final alertText = find.byValueKey("alert_text");
   final okBtn = find.byValueKey("ok");
@@ -26,16 +30,34 @@ class LoginID {
     await this._driver.tap(this.configureBtn);
   }
 
-  Future<void> register(String username) async {
+  Future<void> action(String username, SerializableFinder button) async {
     await this._driver.tap(this.usernameInput);
     await this._driver.enterText(username);
-    await this._driver.tap(this.registerBtn);
+    await this._driver.tap(button);
   }
 
-  Future<void> login(String username) async {
+  Future<void> registerFido2(String username) async {
+    await this.action(username, this.registerFido2Btn);
+  }
+
+  Future<void> registerPassword(String username) async {
+    await this.action(username, this.registerPasswordBtn);
+  }
+
+  Future<void> loginFido2(String username) async {
+    await this.action(username, this.loginFido2Btn);
+  }
+
+  Future<void> loginPassword(String username) async {
+    await this.action(username, this.loginPasswordBtn);
+  }
+
+  Future<void> txConfirmation(String username, String payload) async {
     await this._driver.tap(this.usernameInput);
     await this._driver.enterText(username);
-    await this._driver.tap(this.loginBtn);
+    await this._driver.tap(this.txConfirmationInput);
+    await this._driver.enterText(payload);
+    await this._driver.tap(this.txConfirmationBtn);
   }
 
   Future<void> logout() async {
