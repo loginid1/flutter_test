@@ -105,9 +105,9 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _registerFido2Handler(BuildContext context) async {
     //delete me
     String clientId =
-        "IiJL7d3VCOJ7LL2ZcZmVp5T7clZ3Il7L1g1vgrnxk8QFl1Lc2_h6WarwhJMSve66B_avoNyzJsIeOp6V55_iSQ==";
+        "nQChNEqPSqwnQM56atsdU-LtLbPy6nf7etR8wyV1LJCYtbwdL4lvf2e7BYgUVfkL1C242mVkI_v5B-_V59-Yvg==";
     String baseURL =
-        "https://94a8d020-1c77-11ec-b42a-bb8e0fc28366.usw1.loginid.io";
+        "https://aff5fea0-1f03-11ec-8ea6-19ef049c4f80.usw1.loginid.io";
     await FPLoginApi.configure(clientId, baseURL);
 
     final String username = usernameController.text;
@@ -209,7 +209,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     TransactionOptions options;
     if (needServiceToken) {
-      options = TransactionOptions.buildAuth(createServiceToken("tx.create", data, nonce));
+      options = TransactionOptions.buildAuth(createServiceToken("tx.create", data, nonce, username));
     }
     TransactionPayload payload = TransactionPayload.build(nonce, data);
     final TransactionResponse res = await FPLoginApi.transactionConfirmation(username, payload, options);
@@ -235,7 +235,7 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  String createServiceToken(String type, [String payload = "", String nonce = ""]) {
+  String createServiceToken(String type, [String payload = "", String nonce = "", String username = ""]) {
     final claims = {
       "scope": type,
       "iat": DateTime.now().millisecondsSinceEpoch 
@@ -250,8 +250,11 @@ class _MyHomePageState extends State<MyHomePage> {
         .replaceAll("=", "");
 
       claims["payload_hash"] = result;
-      claims["username"] = "pizza";
       claims["nonce"] = nonce;
+    }
+
+    if (username.length > 0) {
+      claims["username"] = username;
     }
 
     final jwt = JWT(claims);
