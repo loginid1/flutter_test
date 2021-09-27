@@ -53,6 +53,10 @@ class _MyHomePageState extends State<MyHomePage> {
   final usernameController = TextEditingController();
   final txPayloadController = TextEditingController();
   final privateKey = dotenv.get("PRIVATE_KEY").replaceAll("\\n", "\n");
+  final pubClientId = dotenv.get("PUBLIC_CLIENT_ID");
+  final pubBaseUrl = dotenv.get("PUBLIC_BASE_URL");
+  final privClientId = dotenv.get("PRIVATE_CLIENT_ID");
+  final privBaseUrl = dotenv.get("PRIVATE_BASE_URL");
   var password = "Qwerty1!";
   var isLoggedIn = false;
   var needServiceToken = false;
@@ -103,13 +107,6 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _registerFido2Handler(BuildContext context) async {
-    //delete me
-    String clientId =
-        "nQChNEqPSqwnQM56atsdU-LtLbPy6nf7etR8wyV1LJCYtbwdL4lvf2e7BYgUVfkL1C242mVkI_v5B-_V59-Yvg==";
-    String baseURL =
-        "https://aff5fea0-1f03-11ec-8ea6-19ef049c4f80.usw1.loginid.io";
-    await FPLoginApi.configure(clientId, baseURL);
-
     final String username = usernameController.text;
 
     RegistrationOptions options;
@@ -265,6 +262,18 @@ class _MyHomePageState extends State<MyHomePage> {
     return serviceToken;
   }
 
+  void changeApplications(bool isPriv) async {
+    if (isPriv) {
+      print(privClientId);
+      print(privBaseUrl);
+      await FPLoginApi.configure(privClientId, privBaseUrl);
+    } else {
+      print(pubClientId);
+      print(pubBaseUrl);
+      await FPLoginApi.configure(pubClientId, pubBaseUrl);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -284,7 +293,12 @@ class _MyHomePageState extends State<MyHomePage> {
             value: needServiceToken, 
             onChanged: (value) {
               setState(() {
+                String clientId = apiKeyController.text;
+                String baseURL = baseUriController.text;
+                if (clientId.length > 0 || baseURL.length > 0) return;
+
                 needServiceToken = value;
+                changeApplications(value);
               });
             },
             activeTrackColor: Colors.lightGreenAccent,
