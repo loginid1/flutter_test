@@ -235,7 +235,8 @@ class _MyHomePageState extends State<MyHomePage> {
   String createServiceToken(String type, [String payload = "", String nonce = "", String username = ""]) {
     final claims = {
       "scope": type,
-      "iat": DateTime.now().millisecondsSinceEpoch 
+      "iat": DateTime.now().millisecondsSinceEpoch,
+      "nonce": nonce.isEmpty ? random.randomAlphaNumeric(16) : nonce
     };
 
     if (payload.length > 0) {
@@ -264,12 +265,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void changeApplications(bool isPriv) async {
     if (isPriv) {
-      print(privClientId);
-      print(privBaseUrl);
       await FPLoginApi.configure(privClientId, privBaseUrl);
     } else {
-      print(pubClientId);
-      print(pubBaseUrl);
       await FPLoginApi.configure(pubClientId, pubBaseUrl);
     }
   }
