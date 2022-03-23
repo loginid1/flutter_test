@@ -18,6 +18,8 @@ PUBLIC_CLIENT_ID=TAfLalifSCT2Wvs_Nhnxidvf2jrNXNl__Vnt4fgNB-X_6RTrRvKTSWxaIqCn-aL
 PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIGH...............83qbPsk7dR+T70V2lV2n8\n-----END PRIVATE KEY-----"
 ```
 
+- `PRIVATE_CLIENT_ID` should have an attached credential and assumes that it is associated with `PRIVATE_KEY`
+
 ## How It Works
 
 Toggle the `Credential` switch once and when active it will use the private based variables. Toggle it again and it will use the public ones instead.
