@@ -3,7 +3,7 @@ import 'package:test/test.dart';
 import 'package:random_string/random_string.dart' as random;
 import 'package:dotenv/dotenv.dart' show load, env;
 import './pages/loginid.dart';
-import './pages/Messages.dart';
+import './pages/messages.dart';
 
 void main() {
   load();
@@ -11,13 +11,13 @@ void main() {
   final baseUri = env["BASE_URI"];
   final mainUsername = random.randomAlphaNumeric(7);
 
-  FlutterDriver driver;
-  LoginID loginid;
+  FlutterDriver? driver;
+  late LoginID loginid;
 
   setUpAll(() async {
     driver = await FlutterDriver.connect();
     loginid = new LoginID(driver);
-    await loginid.configure(apiKey, baseUri);
+    await loginid.configure(apiKey!, baseUri!);
     await loginid.closeAlert();
   });
   
@@ -26,14 +26,14 @@ void main() {
         final username = random.randomAlphaNumeric(10);
         await loginid.registerFido2(username);
         final result = await loginid.getAlertText();
-        expect(result, Messages.successfulRegister(username));
+        expect(result, Messages.successfulRegister(username: username));
     });
 
     test("Should register a user with FIDO2", () async {
         final username = random.randomAlphaNumeric(10);
         await loginid.registerPassword(username);
         final result = await loginid.getAlertText();
-        expect(result, Messages.successfulRegister(username));
+        expect(result, Messages.successfulRegister(username: username));
     });
   });
 
@@ -109,6 +109,6 @@ void main() {
   */  
 
   tearDownAll(() async {
-    await driver.close();
+    await driver!.close();
   });
 }

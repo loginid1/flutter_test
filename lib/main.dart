@@ -1,13 +1,12 @@
-import 'dart:convert';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:flutterpluginfidologinapi/flutterpluginfidologinapi.dart';
-import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:crypto/crypto.dart';
+import 'package:login_flutter/services/LoginID.dart';
+import 'package:login_flutter/services/Token.dart';
+import 'package:login_flutter/utils/Encodes.dart';
 import 'package:random_string/random_string.dart' as random;
 
 void main() async {
@@ -40,8 +39,8 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
-  final String title;
+  MyHomePage({Key? key, this.title}) : super(key: key);
+  final String? title;
 
   @override
   _MyHomePageState createState() => _MyHomePageState();
@@ -52,16 +51,21 @@ class _MyHomePageState extends State<MyHomePage> {
   final baseUriController = TextEditingController();
   final usernameController = TextEditingController();
   final txPayloadController = TextEditingController();
+  final codeController = TextEditingController();
   final privateKey = dotenv.get("PRIVATE_KEY").replaceAll("\\n", "\n");
   final pubClientId = dotenv.get("PUBLIC_CLIENT_ID");
   final pubBaseUrl = dotenv.get("PUBLIC_BASE_URL");
   final privClientId = dotenv.get("PRIVATE_CLIENT_ID");
   final privBaseUrl = dotenv.get("PRIVATE_BASE_URL");
+  final backendClientId = dotenv.get("BACKEND_CLIENT_ID");
+  final nativeSerive = LoginIDService();
+  final tokenService = TokenService();
+
   var password = "Qwerty1!";
   var isLoggedIn = false;
   var needServiceToken = false;
 
-  callAlertDialog(BuildContext context, String message) {
+  callAlertDialog(BuildContext context, String? message) {
     final Widget ok = TextButton(
       key: Key("ok"),
       child: Text("OK"),
@@ -75,7 +79,7 @@ class _MyHomePageState extends State<MyHomePage> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text("ALERT"),
-          content: Text(message, key: Key("alert_text")),
+          content: Text(message!, key: Key("alert_text")),
           actions: [
             ok,
           ],
@@ -93,10 +97,10 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _userInfo(BuildContext context) async {
-    final String hasAccount = await FPLoginApi.hasAccount() ? "yes" : "no";
-    final String username = await FPLoginApi.getCurrentUsername();
-    final String isLoggedIn = await FPLoginApi.isLoggedIn() ? "yes" : "no";
-    final String token = await FPLoginApi.getCurrentToken();
+    final String hasAccount = (await FPLoginApi.hasAccount())! ? "yes" : "no";
+    final String? username = await FPLoginApi.getCurrentUsername();
+    final String isLoggedIn = (await FPLoginApi.isLoggedIn())! ? "yes" : "no";
+    final String? token = await FPLoginApi.getCurrentToken();
 
     final String message = "hasAccount:$hasAccount\n" +
         "username:$username\n" +
@@ -109,9 +113,10 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _registerFido2Handler(BuildContext context) async {
     final String username = usernameController.text;
 
-    RegistrationOptions options;
+    RegistrationOptions? options;
     if (needServiceToken) {
-      options = RegistrationOptions.buildAuth(createServiceToken("auth.register"));
+      var serviceToken = await tokenService.createServiceToken("auth.register");
+      options = RegistrationOptions.buildAuth(serviceToken);
     }
     final RegisterResponse res = await FPLoginApi.registerWithFido2(username, options);
 
@@ -132,15 +137,16 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _loginFido2Handler(BuildContext context) async {
     final String username = usernameController.text;
 
-    AuthenticationOptions options;
+    AuthenticationOptions? options;
     if (needServiceToken) {
-      options = AuthenticationOptions.buildAuth(createServiceToken("auth.login"));
+      var serviceToken = await tokenService.createServiceToken("auth.login");
+      options = AuthenticationOptions.buildAuth(serviceToken);
     }
     final AuthenticateResponse res = await FPLoginApi.authenticateWithFido2(username, options);
 
     try {
       if (res.success == true) {
-        final String _username = await FPLoginApi.getCurrentUsername();
+        final String? _username = await FPLoginApi.getCurrentUsername();
         callAlertDialog(context, res.jwt);
         setState(() {
           isLoggedIn = true;
@@ -156,9 +162,10 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _registerPasswordHandler(BuildContext context) async {
     final String username = usernameController.text;
 
-    RegistrationOptions options;
+    RegistrationOptions? options;
     if (needServiceToken) {
-      options = RegistrationOptions.buildAuth(createServiceToken("auth.register"));
+      var serviceToken = await tokenService.createServiceToken("auth.register");
+      options = RegistrationOptions.buildAuth(serviceToken);
     }
     final RegisterResponse res = await FPLoginApi.registerWithPassword(username, password, password, options);
 
@@ -179,9 +186,10 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _loginPasswordHandler(BuildContext context) async {
     final String username = usernameController.text;
 
-    AuthenticationOptions options;
+    AuthenticationOptions? options;
     if (needServiceToken) {
-      options = AuthenticationOptions.buildAuth(createServiceToken("auth.login"));
+      var serviceToken = await tokenService.createServiceToken("auth.login");
+      options = AuthenticationOptions.buildAuth(serviceToken);
     }
     final AuthenticateResponse res = await FPLoginApi.authenticateWithPassword(username, password, options);
 
@@ -204,9 +212,10 @@ class _MyHomePageState extends State<MyHomePage> {
     final String data = txPayloadController.text;
     final String nonce = random.randomAlphaNumeric(16);
 
-    TransactionOptions options;
+    TransactionOptions? options;
     if (needServiceToken) {
-      options = TransactionOptions.buildAuth(createServiceToken("tx.create", data, nonce, username));
+      var serviceToken = await tokenService.createTxToken(data);
+      options = TransactionOptions.buildAuth(serviceToken);
     }
     TransactionPayload payload = TransactionPayload.build(nonce, data);
     final TransactionResponse res = await FPLoginApi.transactionConfirmation(username, payload, options);
@@ -225,42 +234,39 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  Future<void> _addCredential(BuildContext context) async {
+    final String username = usernameController.text;
+    final String code = codeController.text;
+
+    try {
+      var code = await this.nativeSerive.generateCode(username, "short", true, "add_credential");
+
+      AddCredentialOptions? options;
+      if (needServiceToken) {
+        var serviceToken = await tokenService.createServiceToken("credentials.add");
+        options = AddCredentialOptions.buildAuth(serviceToken);
+      }
+
+      final AddCredentialResponse res = await FPLoginApi.addFido2Credential(username, code, options);
+
+      if (res.success) {
+        callAlertDialog(context, res.jwt);
+        setState(() {
+          isLoggedIn = true;
+        });
+      } else {
+        callAlertDialog(context, res.errorMessage);
+      }
+    } on Exception catch (err) {
+      callAlertDialog(context, err.toString());
+    }
+  }
+
   Future<void> _logoutButtonHandler(BuildContext context) async {
     await FPLoginApi.logout();
     setState(() {
       isLoggedIn = false;
     });
-  }
-
-  String createServiceToken(String type, [String payload = "", String nonce = "", String username = ""]) {
-    final claims = {
-      "scope": type,
-      "iat": DateTime.now().millisecondsSinceEpoch,
-      "nonce": nonce.isEmpty ? random.randomAlphaNumeric(16) : nonce
-    };
-
-    if (payload.length > 0) {
-      var bytes = utf8.encode(payload);
-      var digest = sha256.convert(bytes);
-      var result = base64.encode(digest.bytes)
-        .replaceAll("+", "-")
-        .replaceAll("/", "_")
-        .replaceAll("=", "");
-
-      claims["payload_hash"] = result;
-      claims["nonce"] = nonce;
-    }
-
-    if (username.length > 0) {
-      claims["username"] = username;
-    }
-
-    final jwt = JWT(claims);
-
-    final key = ECPrivateKey(privateKey);
-
-    String serviceToken = jwt.sign(key, algorithm: JWTAlgorithm.ES256);
-    return serviceToken;
   }
 
   void changeApplications(bool isPriv) async {
@@ -275,7 +281,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text(widget.title!),
       ),
       body: Center(
           child: ListView(
@@ -287,7 +293,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
           new Switch(
             key: Key("credential_switch"),
-            value: needServiceToken, 
+            value: needServiceToken,
             onChanged: (value) {
               setState(() {
                 String clientId = apiKeyController.text;
@@ -381,6 +387,12 @@ class _MyHomePageState extends State<MyHomePage> {
                 _registerPasswordHandler(context);
               },
               child: Text("REGISTER PASSWORD")),
+          ElevatedButton(
+              key: Key("add_credential"),
+              onPressed: () {
+                _addCredential(context);
+              },
+              child: Text("ADD DEVICE")),
           ElevatedButton(
               key: Key("tx_confirmation"),
               onPressed: () {

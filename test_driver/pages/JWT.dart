@@ -4,7 +4,7 @@ import 'package:dotenv/dotenv.dart' show env;
 class JSONWebToken {
   static verifyJWT(String token) {
     try {
-      final String publicKey = env["PUBLIC_KEY"];
+      final String publicKey = env["PUBLIC_KEY"]!;
       final key = ECPublicKey(publicKey);
       JWT.verify(token, key);
       return true;

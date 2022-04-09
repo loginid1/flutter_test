@@ -16,24 +16,24 @@ class LoginID {
   final alertText = find.byValueKey("alert_text");
   final okBtn = find.byValueKey("ok");
 
-  FlutterDriver _driver;
+  FlutterDriver? _driver;
 
-  LoginID(FlutterDriver driver) {
+  LoginID(FlutterDriver? driver) {
     this._driver = driver;
   }
 
   Future<void> configure(String apiKey, String baseURL) async {
-    await this._driver.tap(this.apiKeyInput);
-    await this._driver.enterText(apiKey);
-    await this._driver.tap(this.baseUriInput);
-    await this._driver.enterText(baseURL);
-    await this._driver.tap(this.configureBtn);
+    await this._driver!.tap(this.apiKeyInput);
+    await this._driver!.enterText(apiKey);
+    await this._driver!.tap(this.baseUriInput);
+    await this._driver!.enterText(baseURL);
+    await this._driver!.tap(this.configureBtn);
   }
 
   Future<void> action(String username, SerializableFinder button) async {
-    await this._driver.tap(this.usernameInput);
-    await this._driver.enterText(username);
-    await this._driver.tap(button);
+    await this._driver!.tap(this.usernameInput);
+    await this._driver!.enterText(username);
+    await this._driver!.tap(button);
   }
 
   Future<void> registerFido2(String username) async {
@@ -53,21 +53,21 @@ class LoginID {
   }
 
   Future<void> txConfirmation(String username, String payload) async {
-    await this._driver.tap(this.usernameInput);
-    await this._driver.enterText(username);
-    await this._driver.tap(this.txConfirmationInput);
-    await this._driver.enterText(payload);
-    await this._driver.tap(this.txConfirmationBtn);
+    await this._driver!.tap(this.usernameInput);
+    await this._driver!.enterText(username);
+    await this._driver!.tap(this.txConfirmationInput);
+    await this._driver!.enterText(payload);
+    await this._driver!.tap(this.txConfirmationBtn);
   }
 
   Future<void> logout() async {
-    await this._driver.tap(this.logoutBtn);
+    await this._driver!.tap(this.logoutBtn);
   }
 
   Future<Map<String, String>> getUserInformation() async {
     final info = new Map<String, String>();
 
-    await this._driver.tap(this.infoBtn);
+    await this._driver!.tap(this.infoBtn);
     (await this.getAlertText())
         .split("\n")
         .map<List<String>>((e) => e.split(":"))
@@ -77,13 +77,13 @@ class LoginID {
   }
 
   Future<String> getAlertText() async {
-    await this._driver.waitFor(this.alertText);
-    return await this._driver.getText(this.alertText);
+    await this._driver!.waitFor(this.alertText);
+    return await this._driver!.getText(this.alertText);
   }
 
   Future<void> closeAlert() async {
-    await this._driver.waitFor(this.okBtn);
+    await this._driver!.waitFor(this.okBtn);
     // await Future.delayed(const Duration(seconds: 2), () {});
-    await this._driver.tap(this.okBtn);
+    await this._driver!.tap(this.okBtn);
   }
 }
