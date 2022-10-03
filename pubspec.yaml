@@ -27,7 +27,7 @@ dependencies:
     hosted:
       name: flutterpluginfidologinapi
       url: https://flutter.dev.loginid.io
-    version: 0.61.32
+    version: 0.61.33
   test: any
   flutter_test:
     sdk: flutter
