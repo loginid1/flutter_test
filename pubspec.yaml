@@ -23,11 +23,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutterpluginfidologinapi:
-    hosted:
-      name: flutterpluginfidologinapi
-      url: https://flutter.dev.loginid.io
-    version: 0.61.33
+  flutterpluginfidologinapi: ^0.61.40
   test: any
   flutter_test:
     sdk: flutter
