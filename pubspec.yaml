@@ -23,7 +23,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutterpluginfidologinapi: ^0.61.40
+  flutterpluginfidologinapi: ^0.61.41
   test: any
   flutter_test:
     sdk: flutter

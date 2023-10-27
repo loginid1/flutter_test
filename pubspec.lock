@@ -180,10 +180,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutterpluginfidologinapi
-      sha256: "7d57a565e04587dc5faa42a6e6448135c658b3b32b957cccaf59c7120b6c59b2"
+      sha256: "8aad69f8b5a239aab7b43fde7058c981f1ff62af8f4cf540ea0f3d664536aead"
       url: "https://pub.dev"
     source: hosted
-    version: "0.61.40"
+    version: "0.61.41"
   frontend_server_client:
     dependency: transitive
     description:
